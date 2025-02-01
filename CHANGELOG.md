@@ -1,3 +1,9 @@
+## 1.3.0
+
+- chore: package bump up
+- feat: download 중간에 dispose 시 download cancel하도록 수정
+- refactor: lint check failed case 수정
+
 ## 1.2.0
 
 - Fix building issue with Flutter v3.27.0.
