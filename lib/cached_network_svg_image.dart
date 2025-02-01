@@ -26,6 +26,7 @@ class CachedNetworkSVGImage extends StatefulWidget {
     SvgTheme theme = const SvgTheme(),
     Duration fadeDuration = const Duration(milliseconds: 300),
     ColorFilter? colorFilter,
+    ColorMapper? colorMapper,
     WidgetBuilder? placeholderBuilder,
     BaseCacheManager? cacheManager,
   })  : _url = url,
@@ -46,6 +47,7 @@ class CachedNetworkSVGImage extends StatefulWidget {
         _colorFilter = colorFilter,
         _placeholderBuilder = placeholderBuilder,
         _cacheManager = cacheManager ?? DefaultCacheManager(),
+        _colorMapper = colorMapper,
         super(key: key ?? ValueKey(url));
 
   final String _url;
@@ -66,7 +68,7 @@ class CachedNetworkSVGImage extends StatefulWidget {
   final ColorFilter? _colorFilter;
   final WidgetBuilder? _placeholderBuilder;
   final BaseCacheManager _cacheManager;
-
+  final ColorMapper? _colorMapper;
   @override
   State<CachedNetworkSVGImage> createState() => _CachedNetworkSVGImageState();
 
@@ -214,8 +216,12 @@ class _CachedNetworkSVGImageState extends State<CachedNetworkSVGImage>
   Widget _buildSVGImage() {
     if (_imageFile == null) return const SizedBox();
 
-    return SvgPicture.file(
-      _imageFile!,
+    return SvgPicture(
+      SvgFileLoader(
+        _imageFile!,
+        theme: widget._theme,
+        colorMapper: widget._colorMapper,
+      ),
       fit: widget._fit,
       width: widget._width,
       height: widget._height,
@@ -226,7 +232,6 @@ class _CachedNetworkSVGImageState extends State<CachedNetworkSVGImage>
       excludeFromSemantics: widget._excludeFromSemantics,
       colorFilter: widget._colorFilter,
       placeholderBuilder: widget._placeholderBuilder,
-      theme: widget._theme,
     );
   }
 }

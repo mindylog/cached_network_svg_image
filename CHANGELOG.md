@@ -1,3 +1,7 @@
+## 1.4.0
+
+- Add `colorMapper` parameter to `CachedNetworkSVGImage` constructor to allow custom color mapping.
+
 ## 1.3.0
 
 - chore: package bump up
