@@ -21,8 +21,6 @@ class CachedNetworkSVGImage extends StatefulWidget {
     AlignmentGeometry alignment = Alignment.center,
     bool matchTextDirection = false,
     bool allowDrawingOutsideViewBox = false,
-    @deprecated Color? color,
-    @deprecated BlendMode colorBlendMode = BlendMode.srcIn,
     String? semanticsLabel,
     bool excludeFromSemantics = false,
     SvgTheme theme = const SvgTheme(),
@@ -41,8 +39,6 @@ class CachedNetworkSVGImage extends StatefulWidget {
         _alignment = alignment,
         _matchTextDirection = matchTextDirection,
         _allowDrawingOutsideViewBox = allowDrawingOutsideViewBox,
-        _color = color,
-        _colorBlendMode = colorBlendMode,
         _semanticsLabel = semanticsLabel,
         _excludeFromSemantics = excludeFromSemantics,
         _theme = theme,
@@ -63,8 +59,6 @@ class CachedNetworkSVGImage extends StatefulWidget {
   final AlignmentGeometry _alignment;
   final bool _matchTextDirection;
   final bool _allowDrawingOutsideViewBox;
-  final Color? _color;
-  final BlendMode _colorBlendMode;
   final String? _semanticsLabel;
   final bool _excludeFromSemantics;
   final SvgTheme _theme;
@@ -114,6 +108,8 @@ class _CachedNetworkSVGImageState extends State<CachedNetworkSVGImage>
   late final AnimationController _controller;
   late final Animation<double> _animation;
 
+  Future<void>? _loadImageFuture;
+
   @override
   void initState() {
     super.initState();
@@ -124,34 +120,48 @@ class _CachedNetworkSVGImageState extends State<CachedNetworkSVGImage>
       duration: widget._fadeDuration,
     );
     _animation = Tween(begin: 0.0, end: 1.0).animate(_controller);
-    _loadImage();
+    _loadImageFuture = _loadImage();
   }
 
   Future<void> _loadImage() async {
     try {
       _setToLoadingAfter15MsIfNeeded();
 
-      var file =
-          (await widget._cacheManager.getFileFromMemory(_cacheKey))?.file;
+      FileInfo? fileInfo =
+          await widget._cacheManager.getFileFromMemory(_cacheKey);
 
-      file ??= await widget._cacheManager.getSingleFile(
-        widget._url,
-        key: _cacheKey,
-        headers: widget._headers ?? {},
-      );
+      if (fileInfo?.file == null || !(await fileInfo!.file.exists())) {
+        final file = await widget._cacheManager.getSingleFile(
+          widget._url,
+          key: _cacheKey,
+          headers: widget._headers ?? {},
+        );
+        fileInfo = FileInfo(
+          file,
+          FileSource.Online,
+          DateTime.now(),
+          _cacheKey,
+        );
+      }
 
-      _imageFile = file;
+      if (!mounted) return;
+
+      _imageFile = fileInfo.file;
       _isLoading = false;
 
       _setState();
-
       _controller.forward();
-    } catch (e) {
-      log('CachedNetworkSVGImage: $e');
+    } catch (e, stackTrace) {
+      log(
+        'CachedNetworkSVGImage 로딩 실패',
+        error: e,
+        stackTrace: stackTrace,
+      );
+
+      if (!mounted) return;
 
       _isError = true;
       _isLoading = false;
-
       _setState();
     }
   }
@@ -170,6 +180,7 @@ class _CachedNetworkSVGImageState extends State<CachedNetworkSVGImage>
 
   @override
   void dispose() {
+    _loadImageFuture?.ignore();
     _controller.dispose();
     super.dispose();
   }
@@ -211,8 +222,6 @@ class _CachedNetworkSVGImageState extends State<CachedNetworkSVGImage>
       alignment: widget._alignment,
       matchTextDirection: widget._matchTextDirection,
       allowDrawingOutsideViewBox: widget._allowDrawingOutsideViewBox,
-      color: widget._color,
-      colorBlendMode: widget._colorBlendMode,
       semanticsLabel: widget._semanticsLabel,
       excludeFromSemantics: widget._excludeFromSemantics,
       colorFilter: widget._colorFilter,
