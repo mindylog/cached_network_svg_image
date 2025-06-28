@@ -1,3 +1,7 @@
+## 1.5.0
+
+- Bump up `flutter_svg` to v2.2.0
+
 ## 1.4.0
 
 - Add `colorMapper` parameter to `CachedNetworkSVGImage` constructor to allow custom color mapping.
